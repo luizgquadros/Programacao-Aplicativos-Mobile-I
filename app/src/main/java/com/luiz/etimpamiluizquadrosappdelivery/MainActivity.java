@@ -1,78 +1,124 @@
-package com.luiz.etimpamiluizquadrosappdelivery;  // ← Mude se seu pacote for diferente
+package com.luiz.etimpamiluizquadrosappdelivery;
 
-import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button btnGravar, btnApresentar;
-    EditText edtNome, edtIdade, edtTelefone;
-    TextView tvInfo;
+    Button btnEntrar, btnCriar;
+    EditText edtNome, edtEmail, edtSenha;
+    CheckBox checkBox;
+    SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        initComponets();
 
-        btnGravar = findViewById(R.id.brnGravar);
-        btnApresentar = findViewById(R.id.btnApresentar);
+
+        preferences = getSharedPreferences("login", 0);
+        boolean estaLogado = preferences.getBoolean("ManterLogado", false);
+
+        if (estaLogado) {
+            Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+            startActivity(intent);
+            finish();
+        }
+
+        btnCriar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (validarDados()) {
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putString("EmailSalvo", edtEmail.getText().toString());
+                    editor.putString("SenhaSalva", edtSenha.getText().toString());
+                    editor.putString("NomeSalvo", edtNome.getText().toString());
+                    editor.apply();
+
+                    Toast.makeText(MainActivity.this, "Conta criada com sucesso!", Toast.LENGTH_SHORT).show();
+
+                    edtNome.setText("");
+                    edtEmail.setText("");
+                    edtSenha.setText("");
+                }
+            }
+        });
+
+        btnEntrar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (validarDados()) {
+                    String emailDigitado = edtEmail.getText().toString();
+                    String senhaDigitada = edtSenha.getText().toString();
+
+                    String emailRegistrado = preferences.getString("EmailSalvo", "");
+                    String senhaRegistrada = preferences.getString("SenhaSalva", "");
+
+                    if (emailDigitado.equals(emailRegistrado) && senhaDigitada.equals(senhaRegistrada)) {
+                        if (checkBox.isChecked()) {
+                            SharedPreferences.Editor editor = preferences.edit();
+                            editor.putBoolean("ManterLogado", true);
+                            editor.apply();
+                        }
+                        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+                        startActivity(intent);
+                        finish();
+
+                    } else {
+                        Toast.makeText(MainActivity.this, "E-mail ou senha incorretos!", Toast.LENGTH_LONG).show();
+                    }
+                }
+            }
+        });
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+    }
+
+    private boolean validarDados() {
+        boolean retorno = true;
+
+        if (edtNome.getText().toString().isEmpty()) {
+            retorno = false;
+            edtNome.setError("Este campo não pode estar vazio!");
+        }
+
+        if (edtEmail.getText().toString().isEmpty()) {
+            retorno = false;
+            edtEmail.setError("Este campo não pode estar vazio!");
+        }
+
+        if (edtSenha.getText().toString().isEmpty()) {
+            retorno = false;
+            edtSenha.setError("Este campo não pode estar vazio!");
+        }
+        return retorno;
+    }
+
+    private void initComponets() {
         edtNome = findViewById(R.id.edtNome);
-        edtIdade = findViewById(R.id.edtIdade);
-        edtTelefone = findViewById(R.id.edtTelefone);
-        tvInfo = findViewById(R.id.tvInfo);
-
-
-        btnGravar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                gravarDados();
-            }
-        });
-
-
-        btnApresentar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                recuperarDados();
-            }
-        });
-    }
-
-
-    private void gravarDados() {
-        SharedPreferences prefs = getSharedPreferences("meusDados", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-
-        editor.putString("nome", edtNome.getText().toString());
-        editor.putString("idade", edtIdade.getText().toString());
-        editor.putString("telefone", edtTelefone.getText().toString());
-
-        editor.apply();
-
-        Toast.makeText(this, "Dados gravados com sucesso!", Toast.LENGTH_SHORT).show();
-
-
-        edtNome.setText("");
-        edtIdade.setText("");
-        edtTelefone.setText("");
-    }
-
-
-    private void recuperarDados() {
-        SharedPreferences prefs = getSharedPreferences("meusDados", Context.MODE_PRIVATE);
-
-        String nome = prefs.getString("nome", "Não informado");
-        String idade = prefs.getString("idade", "Não informado");
-        String telefone = prefs.getString("telefone", "Não informado");
-
-        tvInfo.setText("Nome: " + nome + "\nIdade: " + idade + "\nTelefone: " + telefone);
+        edtEmail = findViewById(R.id.edtEmail);
+        edtSenha = findViewById(R.id.edtSenha);
+        btnEntrar = findViewById(R.id.btnEntrar);
+        btnCriar = findViewById(R.id.btnCriar);
+        checkBox = findViewById(R.id.checkBox);
     }
 }
